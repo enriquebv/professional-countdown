@@ -1,6 +1,9 @@
 {
   "name": "professional-banners",
   "private": true,
+  "engines": {
+    "npm": "please-use-yarn"
+  },
   "scripts": {
     "build": "tsc && remix build",
     "predev": "prisma generate && prisma migrate deploy",
@@ -16,9 +19,11 @@
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "fix:dev": "echo https://github.com/Shopify/cli/issues/3190 && rm yarn.lock && rm -rf .cache && rm -rf build && rm -rf node_modules && yarn && echo \"Now you can run yarn dev\""
   },
   "dependencies": {
+    "@autotelic/pino-seq-transport": "^0.1.0",
     "@prisma/client": "^4.13.0",
     "@remix-run/dev": "^2.0.0",
     "@remix-run/node": "^2.0.0",
@@ -31,9 +36,11 @@
     "@shopify/shopify-app-remix": "^2.1.0",
     "@shopify/shopify-app-session-storage-prisma": "^2.0.0",
     "isbot": "latest",
+    "pino": "^8.17.1",
     "prisma": "^4.13.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-use": "^17.4.2"
   },
   "devDependencies": {
     "@remix-run/eslint-config": "^2.0.0",

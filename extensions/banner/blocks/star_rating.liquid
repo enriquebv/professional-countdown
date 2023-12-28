@@ -1,0 +1,40 @@
+{% if request.design_mode == true and block.settings.config_id == blank %}
+  <p>Set a valid countdown ID first.</p>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Star Rating",
+  "target": "section",
+  "settings": [
+    { 
+      "type": "text",
+      "id": "config_id",
+      "label": "Banner ID",
+      "info": "Enter the ID of the configured banner you want to display. [How to obtain the banner ID](https://google.es)"
+    },
+    { 
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color"
+    },
+    { 
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color"
+    },
+    { 
+      "type": "font_picker",
+      "id": "countdown_font",
+      "label": "Countdown Font",
+      "default": "mono"
+    },
+    { 
+      "type": "liquid",
+      "id": "content",
+      "label": "Content"
+    }
+  ]
+}
+{% endschema %}
+
