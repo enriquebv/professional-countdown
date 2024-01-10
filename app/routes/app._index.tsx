@@ -21,8 +21,7 @@ import {
 import { authenticate } from "../shopify.server";
 import ShopifyRepository from "~/repositories/shopify";
 import getConfig from "~/actions/read-config";
-import createConfig from "~/actions/create-config";
-import removeConfig from "~/actions/remove-config";
+import setupApp from "~/actions/setup-app";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -37,11 +36,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   switch (body.action) {
     case "create":
-      await createConfig(new ShopifyRepository(admin));
+      await setupApp(new ShopifyRepository(admin));
       return json({ created: true });
-    case "remove":
-      await removeConfig(new ShopifyRepository(admin));
-      return json({ removed: true });
     default:
       return json({}, { status: 400 });
   }

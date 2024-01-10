@@ -9,16 +9,21 @@ import {
   ButtonGroup,
   Button,
   type ChoiceListProps,
+  Bleed,
+  TextField,
+  InlineError,
 } from "@shopify/polaris";
 import InputDate from "../InputDate";
 import type useCountdownForm from "./useCountdownForm";
 import { useState } from "react";
 import LegacyInputTime from "../LegacyInputTime";
-import { type CountdownFormValues } from "./useCountdownForm";
 import HourRangeSlider from "../HourRangeSlider";
+import { formatDate } from "~/lib/utils";
+import type { CountdownConfig } from "~/lib/types";
 
 interface Props {
   form: ReturnType<typeof useCountdownForm>;
+  showValidationErrors: boolean;
 }
 
 export default function CountdownForm(props: Props) {
@@ -26,11 +31,11 @@ export default function CountdownForm(props: Props) {
   const [isUsingScheduledAt, setIsUsingScheduledAt] = useState(false);
 
   function handleIsUsingEndDateChange(checked: boolean) {
-    // Note: If is going to use end date, set it to previous day by default
+    // Note: If is going to use end date, set it to previous 6 from now by default
     if (checked === true && form.scheduledAt === undefined) {
-      const previousWeek = new Date();
-      previousWeek.setDate(previousWeek.getDate() - 7);
-      form.onScheduledAtChange(previousWeek);
+      const previousWeek = new Date(form.finishAt);
+      previousWeek.setDate(previousWeek.getDate() - 6);
+      form.setScheduledAt(previousWeek);
     }
 
     // Note: If is not going to use end date, remove it
@@ -41,7 +46,7 @@ export default function CountdownForm(props: Props) {
     setIsUsingScheduledAt(checked);
   }
 
-  const selectedActiveDays = Object.entries(form.activeDays)
+  const selectedActiveDays = Object.entries(form.days)
     .filter(([, value]) => value.enabled)
     .map(([key]) => key);
 
@@ -52,11 +57,35 @@ export default function CountdownForm(props: Props) {
           <Text as="h2" variant="headingMd">
             Countdown dates
           </Text>
+          <TextField
+            id="countdown-name"
+            label="Title"
+            autoComplete="off"
+            value={form.values.name}
+            onChange={form.setName}
+            error={
+              props.showValidationErrors &&
+              form.validationErrors.includes("missing-name")
+            }
+            helpText={
+              props.showValidationErrors &&
+              form.validationErrors.includes("missing-name") ? (
+                <InlineError
+                  fieldID="countdown-name"
+                  message="Name can not be empty."
+                />
+              ) : (
+                "This is the name of the countdown. It will be used to identify it."
+              )
+            }
+          />
+
           <Datetime
             dateLabel="End date"
             timeLabel="End time"
             value={form.finishAt}
-            onChange={form.onFinishAtChange}
+            onChange={form.setFinishAt}
+            disableDatesBefore={new Date()}
             helperText="It will end at this date."
           />
 
@@ -71,7 +100,7 @@ export default function CountdownForm(props: Props) {
               dateLabel="Start date"
               timeLabel="Start time"
               value={form.scheduledAt}
-              onChange={form.onScheduledAtChange}
+              onChange={form.setScheduledAt}
               disableDatesAfter={form.finishAt}
               helperText="It will be hidden until this date."
             />
@@ -92,23 +121,34 @@ export default function CountdownForm(props: Props) {
               {
                 label: "Simple",
                 value: "simple",
-                helpText:
-                  "Will be shown at {{date}} and will hidden at {{date}}.",
+                helpText: `Countdown will be active from 
+                    ${
+                      form.scheduledAt ? formatDate(form.scheduledAt) : "now"
+                    } to 
+                    ${formatDate(form.finishAt)}.`,
               },
-              { label: "Advanced", value: "advanced" },
+              {
+                label: "Advanced",
+                value: "advanced",
+                helpText: "Configure countdown visibility by day and/or hour.",
+              },
             ]}
             selected={[form.mode]}
             onChange={(options) =>
-              form.onModeChange(options[0] as CountdownFormValues["mode"])
+              form.setMode(options[0] as CountdownConfig["mode"])
             }
           />
 
           {form.mode === "advanced" ? (
-            <Box>
-              <>
+            <Bleed marginBlockStart="200">
+              <Box paddingInlineStart="600">
                 <BlockStack gap="200">
                   <ChoiceList
-                    title="Days will be shown"
+                    title={
+                      <Text as="p" variant="headingSm" fontWeight="medium">
+                        Day-Specific Settings
+                      </Text>
+                    }
                     allowMultiple
                     choices={[
                       createActiveDayOption("monday", selectedActiveDays, form),
@@ -141,11 +181,11 @@ export default function CountdownForm(props: Props) {
                         ? "At least one day must be selected. "
                         : undefined
                     }
-                    onChange={form.onActiveDaysEnabledChange}
+                    onChange={form.setActiveDayEnabledStatus}
                   />
                 </BlockStack>
-              </>
-            </Box>
+              </Box>
+            </Bleed>
           ) : null}
         </BlockStack>
       </Card>
@@ -153,9 +193,7 @@ export default function CountdownForm(props: Props) {
   );
 }
 
-function createActiveDayOption<
-  Key extends keyof CountdownFormValues["activeDays"],
->(
+function createActiveDayOption<Key extends keyof CountdownConfig["days"]>(
   key: Key,
   selectedActiveDays: string[],
   form: ReturnType<typeof useCountdownForm>,
@@ -184,14 +222,18 @@ function createActiveDayOption<
     ),
     value: key,
     renderChildren(selected: boolean) {
-      return selected ? (
+      if (!selected) {
+        return null;
+      }
+
+      return (
         <DayHourSelection
-          onAllDayChange={(value) => form.onActiveDayAllDayChange(key, value)}
-          onRangeChange={(value) => form.onActiveDayRangeChange(key, value)}
-          allDayValue={form.activeDays[key].allDay}
-          rangeValue={form.activeDays[key].hoursRange}
+          onAllDayChange={(value) => form.setActiveDayAllDayStatus(key, value)}
+          onRangeChange={(value) => form.setActiveDayRange(key, value)}
+          allDayValue={form.days[key].allDay}
+          rangeValue={form.days[key].hoursRange}
         />
-      ) : null;
+      );
     },
   };
 }
@@ -202,6 +244,7 @@ interface DatetimeProps {
   value: Date;
   onChange: (value: Date) => void;
   disableDatesAfter?: Date;
+  disableDatesBefore?: Date;
   helperText?: string;
 }
 
@@ -215,6 +258,7 @@ function Datetime(props: DatetimeProps) {
             value={props.value}
             onChange={props.onChange}
             disableDatesAfter={props.disableDatesAfter}
+            disableDatesBefore={props.disableDatesBefore}
           />
         </Box>
         <Box minWidth="48%">

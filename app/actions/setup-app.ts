@@ -1,7 +1,7 @@
 import type ShopifyRepository from "~/repositories/shopify";
 
-export default async function removeConfig(
+export default async function createConfig(
   shopifyRepository: ShopifyRepository,
 ) {
-  return await shopifyRepository.removeConfig();
+  await shopifyRepository.createAppMetaobject();
 }

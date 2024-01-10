@@ -1,30 +1,51 @@
-import { METAOBJECT_KEY } from "./constants";
+import { METAOBJECT_TYPE } from "./constants";
 
-export const MUTATION_CREATE_METAOBJECT_CONFIG = `
+// Docs: https://shopify.dev/docs/api/admin-graphql/2023-10/mutations/metaobjectDefinitionCreate
+export const MUTATION_CREATE_METAOBJECT_DEFINITION = `
   mutation {
     metaobjectDefinitionCreate(definition: {
-      name: "Testimonial2"
-      type: "${METAOBJECT_KEY}"
+      name: "App Storage"
+      type: "${METAOBJECT_TYPE}"
       access: {
         admin: PUBLIC_READ_WRITE
       }
       fieldDefinitions: [
         {
-          key: "author"
-          name: "Author"
+          key: "config-id"
+          name: "ID"
           type: "single_line_text_field"
         },
         {
-          key: "body"
-          name: "Body"
-          type: "multi_line_text_field"
-        }
+          key: "version"
+          name: "Metaobject Version"
+          type: "single_line_text_field"
+        },
+        {
+          key: "config",
+          name: "Config",
+          type: "json"
+        },
       ]
     }) {
       metaobjectDefinition {
         id
       }
       userErrors {
+        message
+      }
+    }
+  }`;
+
+// Docs: https://shopify.dev/docs/api/admin-graphql/2023-10/mutations/metaobjectCreate
+export const MUTATION_CREATE_METAOBJECT = `
+  mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
+    metaobjectCreate(metaobject: $metaobject) {
+      metaobject {
+        id
+        handle
+      }
+      userErrors {
+        field
         message
       }
     }

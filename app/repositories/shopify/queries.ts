@@ -1,8 +1,8 @@
-import { METAOBJECT_KEY } from "./constants";
+import { METAOBJECT_TYPE } from "./constants";
 
 export const QUERY_METAOBJECT_CONFIG = `
   {
-    metaobjectDefinitionByType(type:"${METAOBJECT_KEY}") {
+    metaobjectDefinitionByType(type:"${METAOBJECT_TYPE}") {
       id
     }
   }`;

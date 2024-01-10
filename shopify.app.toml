@@ -2,18 +2,18 @@
 
 name = "Professional Countdowns"
 client_id = "0d47d73bf2eafabe427f4ddba149cca4"
-application_url = "https://wp-fallen-contamination-framed.trycloudflare.com"
+application_url = "https://newer-indicating-processed-lazy.trycloudflare.com"
 embedded = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,write_metaobject_definitions"
+scopes = "write_products,write_metaobject_definitions,read_metaobjects,write_metaobjects"
 
 [auth]
 redirect_urls = [
-  "https://wp-fallen-contamination-framed.trycloudflare.com/auth/callback",
-  "https://wp-fallen-contamination-framed.trycloudflare.com/auth/shopify/callback",
-  "https://wp-fallen-contamination-framed.trycloudflare.com/api/auth/callback"
+  "https://newer-indicating-processed-lazy.trycloudflare.com/auth/callback",
+  "https://newer-indicating-processed-lazy.trycloudflare.com/auth/shopify/callback",
+  "https://newer-indicating-processed-lazy.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

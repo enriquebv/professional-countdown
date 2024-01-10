@@ -20,3 +20,23 @@ model Session {
   accessToken String
   userId      BigInt?
 }
+
+model CountdownConfig {
+  id          String    @id @default(uuid())
+  name        String
+  finishAt    DateTime
+  scheduledAt DateTime?
+  mode        String // "simple" | "advanced"
+  days       CountdownConfigDay[]
+}
+
+model CountdownConfigDay {
+  id          String    @id @default(uuid())
+  day         String   // "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"
+  enabled     Boolean
+  allDay      Boolean
+  rangeStart  String
+  rangeEnd    String
+  configId    String
+  config      CountdownConfig @relation(fields: [configId], references: [id])
+}

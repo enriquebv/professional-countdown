@@ -1,4 +1,4 @@
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useParams } from "@remix-run/react";
 import {
   Card,
   Layout,
@@ -11,75 +11,18 @@ import {
   Button,
   InlineStack,
   Icon,
-  Banner,
 } from "@shopify/polaris";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import CountdownForm from "~/components/CountdownForm";
 import useCountdownForm from "~/components/CountdownForm/useCountdownForm";
-import { CancelMinor, ClipboardMinor } from "@shopify/polaris-icons";
+import { CancelMinor } from "@shopify/polaris-icons";
 import { formatDate } from "~/lib/utils";
-import {
-  type ActionFunctionArgs,
-  redirect,
-  type LoaderFunctionArgs,
-  json,
-} from "@remix-run/node";
-import createCountdownConfig from "~/actions/create-countdown-config";
-import type { CountdownConfig, CountdownConfigWithId } from "~/lib/types";
-import { DatabaseRepository } from "~/repositories/db";
-import { authenticate } from "~/shopify.server";
-import ShopifyRepository from "~/repositories/shopify";
-import readCountdownConfig from "~/actions/read-countdown-config";
-
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-
-  if (params.modeOrId === undefined) {
-    return redirect("/app/?error=missing-mode-or-id");
-  }
-
-  if (params.modeOrId === "create") {
-    return json({ mode: "create" });
-  }
-
-  return json({
-    mode: "update",
-    config: await readCountdownConfig(
-      params.modeOrId,
-      new DatabaseRepository(),
-    ),
-  });
-};
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
-  const body: CountdownConfig = await request.json();
-  const databaseRepository = new DatabaseRepository();
-  const shopifyRepository = new ShopifyRepository(admin);
-
-  const config = await createCountdownConfig(
-    body,
-    databaseRepository,
-    shopifyRepository,
-  );
-
-  return redirect(`/app/countdown/${config.id}?section=theme`);
-};
 
 export default function AdditionalPage() {
-  const lastToastIdRef = useRef<string | null>(null);
-  const data = useLoaderData<
-    | {
-        mode: "create";
-      }
-    | { mode: "update"; config: CountdownConfigWithId }
-  >();
-  const fetcher = useFetcher();
-  const [showValidationErrors, setShowValidationErrors] =
-    useState<boolean>(false);
-
+  const params = useParams();
   const [selected, setSelected] = useState(0);
   const [showTemplates, setShowTemplates] = useState(true);
+  const isCreate = params.modeOrId === "create";
   const form = useCountdownForm();
 
   const handleTabChange = useCallback(
@@ -87,22 +30,15 @@ export default function AdditionalPage() {
     [],
   );
 
-  async function handleSave() {
+  function handleSave() {
     const issues = form.checkValidity();
 
-    setShowValidationErrors(() => false);
-
     if (issues.length > 0) {
-      setShowValidationErrors(() => true);
+      console.log(issues);
       return;
     }
 
-    await fetcher.submit(JSON.stringify(form.values), {
-      method: "POST",
-      encType: "application/json",
-    });
-
-    shopify.toast.show("Countdown created.");
+    alert(JSON.stringify(form.values, null, 2));
   }
 
   function handleDiscard() {}
@@ -125,54 +61,15 @@ export default function AdditionalPage() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="300">
-            {showValidationErrors && form.validationErrors.length !== 0 ? (
-              <Banner title="Review fields" tone="critical">
-                <List>
-                  {form.validationErrors.includes("missing-name") ? (
-                    <List.Item>Missing name.</List.Item>
-                  ) : null}
-                </List>
-                <List>
-                  {form.validationErrors.includes(
-                    "finish-is-sooner-than-start",
-                  ) ? (
-                    <List.Item>Finish is sooner than start.</List.Item>
-                  ) : null}
-                </List>
-              </Banner>
-            ) : null}
-            {data.mode === "update" ? (
+            {!isCreate ? (
               <Card>
                 <BlockStack gap="300">
-                  <div
-                    role="button"
-                    aria-label="Countdown ID"
-                    onClick={() => {
-                      if (lastToastIdRef.current !== null) {
-                        shopify.toast.hide(lastToastIdRef.current);
-                      }
-
-                      navigator.clipboard.writeText(data.config.id);
-                      lastToastIdRef.current = shopify.toast.show(
-                        "Copied to clipboard.",
-                      );
-                    }}
-                  >
-                    <TextField
-                      label="Countdown ID"
-                      value={data.config.id}
-                      readOnly
-                      autoComplete="off"
-                      connectedRight={
-                        <Button
-                          size="large"
-                          icon={<Icon source={ClipboardMinor} />}
-                        >
-                          Copy
-                        </Button>
-                      }
-                    />
-                  </div>
+                  <TextField
+                    label="Countdown ID"
+                    value="01348719237419237"
+                    readOnly
+                    autoComplete="off"
+                  />
                 </BlockStack>
               </Card>
             ) : null}
@@ -189,7 +86,7 @@ export default function AdditionalPage() {
                     id: "add-to-theme",
                     content: "2. Add to theme",
                     panelID: "add-to-theme",
-                    disabled: data.mode === "create",
+                    disabled: true,
                   },
                 ]}
                 selected={selected}
@@ -198,10 +95,7 @@ export default function AdditionalPage() {
               ></Tabs>
             </Card>
 
-            <CountdownForm
-              form={form}
-              showValidationErrors={showValidationErrors}
-            />
+            <CountdownForm form={form} />
           </BlockStack>
         </Layout.Section>
         <Layout.Section variant="oneThird">
@@ -261,7 +155,7 @@ export default function AdditionalPage() {
                 <BlockStack gap="200">
                   <InlineStack align="space-between" blockAlign="center">
                     <Text as="h2" variant="headingMd">
-                      Presets
+                      Countdown templates
                     </Text>
                     <Button
                       variant="plain"
