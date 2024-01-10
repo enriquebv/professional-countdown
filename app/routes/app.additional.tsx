@@ -11,8 +11,7 @@ import {
 
 export default function AdditionalPage() {
   return (
-    <Page>
-      <ui-title-bar title="Additional page" />
+    <Page title="Advanced">
       <Layout>
         <Layout.Section>
           <Card>

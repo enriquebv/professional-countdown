@@ -1,12 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import {
-  useActionData,
-  useLoaderData,
-  useNavigate,
-  useNavigation,
-  useSubmit,
-} from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -17,17 +11,23 @@ import {
   List,
   Link,
   InlineStack,
+  Bleed,
+  ResourceList,
+  ResourceItem,
+  Badge,
+  type ResourceListProps,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import ShopifyRepository from "~/repositories/shopify";
-import getConfig from "~/actions/read-config";
 import setupApp from "~/actions/setup-app";
+import createContextByRequest from "~/context.server";
+import { useState } from "react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
-  const data = await getConfig(new ShopifyRepository(admin));
+  const { databaseRepository } = await createContextByRequest(request);
+  const countdowns = await databaseRepository.listCountdownConfigs();
 
-  return json(data);
+  return json({ countdowns });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -45,60 +45,85 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Index() {
   const navigate = useNavigate();
-  const data = useLoaderData();
-  const nav = useNavigation();
-  const actionData = useActionData<typeof action>();
-  const submit = useSubmit();
-  const isLoading =
-    ["loading", "submitting"].includes(nav.state) && nav.formMethod === "POST";
+  const data = useLoaderData<typeof loader>();
+  const [selectedCountdowns, setSelectedCountdowns] = useState<
+    ResourceListProps["selectedItems"]
+  >([]);
+  // const nav = useNavigation();
+  // const actionData = useActionData<typeof action>();
+  // const submit = useSubmit();
+  // const isLoading =
+  //   ["loading", "submitting"].includes(nav.state) && nav.formMethod === "POST";
 
-  const sendSubmit = () =>
-    submit(
-      { action: "create" },
-      { replace: true, method: "POST", encType: "application/json" },
-    );
+  // const sendSubmit = () =>
+  //   submit(
+  //     { action: "create" },
+  //     { replace: true, method: "POST", encType: "application/json" },
+  //   );
 
-  const sendRemove = () =>
-    submit(
-      { action: "remove" },
-      { replace: true, method: "POST", encType: "application/json" },
-    );
+  // const sendRemove = () =>
+  //   submit(
+  //     { action: "remove" },
+  //     { replace: true, method: "POST", encType: "application/json" },
+  //   );
+
+  console.log(data);
 
   return (
-    <Page>
-      <ui-title-bar title="Remix app template">
-        <button
+    <Page
+      title="Countdowns"
+      primaryAction={
+        <Button
           variant="primary"
           onClick={() => navigate("/app/countdown/create")}
         >
           Create countdown
-        </button>
-      </ui-title-bar>
+        </Button>
+      }
+    >
       <BlockStack gap="500">
         <Layout>
           <Layout.Section>
             <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    TEST:
-                  </Text>
-                  <pre>
-                    <code>{JSON.stringify(actionData, null, 2)}</code>
-                  </pre>
-                  <pre>
-                    <code>{JSON.stringify(data, null, 2)}</code>
-                  </pre>
-                </BlockStack>
-                <InlineStack gap="300">
-                  <Button loading={isLoading} onClick={sendSubmit}>
-                    Create metaobject
-                  </Button>
-                  <Button loading={isLoading} onClick={sendRemove}>
-                    Remove metaobject
-                  </Button>
-                </InlineStack>
-              </BlockStack>
+              <Bleed marginBlock={"400"} marginInline={"400"}>
+                <ResourceList
+                  selectedItems={selectedCountdowns}
+                  onSelectionChange={setSelectedCountdowns}
+                  resourceName={{ singular: "countdown", plural: "countdowns" }}
+                  items={data.countdowns}
+                  promotedBulkActions={[
+                    {
+                      content:
+                        selectedCountdowns?.length === 1
+                          ? "Remove selected coundown"
+                          : "Remove selected countdowns",
+                      onAction: () => console.log("Todo: implement bulk edit"),
+                    },
+                  ]}
+                  renderItem={(item) => {
+                    const { id, name } = item;
+
+                    return (
+                      <ResourceItem
+                        id={id}
+                        url={`/app/countdown/${id}`}
+                        accessibilityLabel={`View details for ${name}`}
+                      >
+                        <Text variant="bodyMd" fontWeight="bold" as="h3">
+                          {name}
+                        </Text>
+                        <Badge progress="incomplete">Disabled</Badge>
+                        <Badge progress="partiallyComplete" tone="info">
+                          Will start at date
+                        </Badge>
+                        <Badge progress="complete" tone="success">
+                          Active until date
+                        </Badge>
+                      </ResourceItem>
+                    );
+                  }}
+                />
+              </Bleed>
             </Card>
           </Layout.Section>
           <Layout.Section variant="oneThird">

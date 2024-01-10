@@ -23,6 +23,7 @@ model Session {
 
 model CountdownConfig {
   id          String    @id @default(uuid())
+  shop        String
   name        String
   finishAt    DateTime
   scheduledAt DateTime?

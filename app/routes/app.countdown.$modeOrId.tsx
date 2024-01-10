@@ -26,13 +26,11 @@ import {
 } from "@remix-run/node";
 import createCountdownConfig from "~/actions/create-countdown-config";
 import type { CountdownConfig, CountdownConfigWithId } from "~/lib/types";
-import { DatabaseRepository } from "~/repositories/db";
-import { authenticate } from "~/shopify.server";
-import ShopifyRepository from "~/repositories/shopify";
 import readCountdownConfig from "~/actions/read-countdown-config";
+import createContextByRequest from "~/context.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { databaseRepository } = await createContextByRequest(request);
 
   if (params.modeOrId === undefined) {
     return redirect("/app/?error=missing-mode-or-id");
@@ -44,18 +42,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   return json({
     mode: "update",
-    config: await readCountdownConfig(
-      params.modeOrId,
-      new DatabaseRepository(),
-    ),
+    config: await readCountdownConfig(params.modeOrId, databaseRepository),
   });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { databaseRepository, shopifyRepository } =
+    await createContextByRequest(request);
   const body: CountdownConfig = await request.json();
-  const databaseRepository = new DatabaseRepository();
-  const shopifyRepository = new ShopifyRepository(admin);
 
   const config = await createCountdownConfig(
     body,

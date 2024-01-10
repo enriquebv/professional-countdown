@@ -1,11 +1,11 @@
-import { METAOBJECT_TYPE } from "./constants";
+import { COUNTDOWNS_METAOBJECT_TYPE } from "./constants";
 
 // Docs: https://shopify.dev/docs/api/admin-graphql/2023-10/mutations/metaobjectDefinitionCreate
 export const MUTATION_CREATE_METAOBJECT_DEFINITION = `
   mutation {
     metaobjectDefinitionCreate(definition: {
-      name: "App Storage"
-      type: "${METAOBJECT_TYPE}"
+      name: "Shopify Countdown Configs"
+      type: "${COUNTDOWNS_METAOBJECT_TYPE}"
       access: {
         admin: PUBLIC_READ_WRITE
       }
@@ -17,7 +17,7 @@ export const MUTATION_CREATE_METAOBJECT_DEFINITION = `
         },
         {
           key: "version"
-          name: "Metaobject Version"
+          name: "Config Version"
           type: "single_line_text_field"
         },
         {
@@ -47,6 +47,7 @@ export const MUTATION_CREATE_METAOBJECT = `
       userErrors {
         field
         message
+        code
       }
     }
   }`;

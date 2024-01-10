@@ -2,7 +2,7 @@
 
 name = "Professional Countdowns"
 client_id = "0d47d73bf2eafabe427f4ddba149cca4"
-application_url = "https://newer-indicating-processed-lazy.trycloudflare.com"
+application_url = "https://developed-incentives-pennsylvania-curious.trycloudflare.com"
 embedded = true
 
 [access_scopes]
@@ -11,9 +11,9 @@ scopes = "write_products,write_metaobject_definitions,read_metaobjects,write_met
 
 [auth]
 redirect_urls = [
-  "https://newer-indicating-processed-lazy.trycloudflare.com/auth/callback",
-  "https://newer-indicating-processed-lazy.trycloudflare.com/auth/shopify/callback",
-  "https://newer-indicating-processed-lazy.trycloudflare.com/api/auth/callback"
+  "https://developed-incentives-pennsylvania-curious.trycloudflare.com/auth/callback",
+  "https://developed-incentives-pennsylvania-curious.trycloudflare.com/auth/shopify/callback",
+  "https://developed-incentives-pennsylvania-curious.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

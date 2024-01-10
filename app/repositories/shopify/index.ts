@@ -9,7 +9,10 @@ import {
 import { Logger } from "~/lib/logger";
 import { UserErrorsFoundError } from "./exceptions";
 import { type CountdownConfigWithId } from "~/lib/types";
-import { CURRENT_METAOBJECT_VERSION, METAOBJECT_TYPE } from "./constants";
+import {
+  CURRENT_COUNTDOWNS_METAOBJECT_VERSION,
+  COUNTDOWNS_METAOBJECT_TYPE,
+} from "./constants";
 
 export default class ShopifyRepository {
   admin: AdminApiContext<RestResources>;
@@ -18,7 +21,11 @@ export default class ShopifyRepository {
     this.admin = admin;
   }
 
-  private async fetchGraphql(query: string, variables = {}) {
+  private async fetchGraphql<ReturnType = any>(
+    query: string,
+    variables = {},
+    avoidMetaobjectDefinitionCreation = false,
+  ): Promise<ReturnType> {
     try {
       const response = await this.admin.graphql(query, { variables });
       const json = await response.json();
@@ -26,8 +33,36 @@ export default class ShopifyRepository {
       const hasUserErrors = Object.keys(json.data).some(
         (key) => (json.data[key]?.userErrors ?? []).length !== 0,
       );
+      const isMissingMetaobjectDefinition =
+        hasUserErrors &&
+        Object.values(json.data)
+          .filter((data: any) => data.userErrors)
+          .flatMap((data: any) =>
+            data.userErrors.map((error: { code: string }) => error.code),
+          )
+          .includes("UNDEFINED_OBJECT_TYPE");
+
+      // Note: if the metaobject definition is missing, we create it and try again.
+      if (
+        isMissingMetaobjectDefinition &&
+        avoidMetaobjectDefinitionCreation === false
+      ) {
+        await this.createAppMetaobject();
+        return await this.fetchGraphql(query, variables, true);
+      }
 
       if (hasUserErrors) {
+        Object.keys(json.data).forEach((key) => {
+          const errors = json.data[key].userErrors ?? [];
+          console.group("[ShopifyRepository] GraphQL user error");
+
+          errors.forEach((error: { message: string; code: string }) => {
+            console.error(`- ${error.message} (${error.code})`);
+          });
+
+          console.groupEnd();
+        });
+
         throw new UserErrorsFoundError(query, variables, json);
       }
 
@@ -57,7 +92,7 @@ export default class ShopifyRepository {
           },
           {
             key: "version",
-            value: CURRENT_METAOBJECT_VERSION,
+            value: CURRENT_COUNTDOWNS_METAOBJECT_VERSION,
           },
           {
             key: "config",
@@ -65,7 +100,7 @@ export default class ShopifyRepository {
           },
         ],
         handle: `countdown-${config.id}`,
-        type: METAOBJECT_TYPE,
+        type: COUNTDOWNS_METAOBJECT_TYPE,
       },
     });
   }

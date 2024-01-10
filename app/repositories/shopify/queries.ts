@@ -1,8 +1,8 @@
-import { METAOBJECT_TYPE } from "./constants";
+import { COUNTDOWNS_METAOBJECT_TYPE } from "./constants";
 
 export const QUERY_METAOBJECT_CONFIG = `
   {
-    metaobjectDefinitionByType(type:"${METAOBJECT_TYPE}") {
+    metaobjectDefinitionByType(type:"${COUNTDOWNS_METAOBJECT_TYPE}") {
       id
     }
   }`;
