@@ -1,4 +1,4 @@
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import {
   Card,
   Layout,
@@ -6,17 +6,17 @@ import {
   Page,
   Text,
   BlockStack,
-  TextField,
   Tabs,
   Button,
   InlineStack,
   Icon,
   Banner,
+  Modal,
 } from "@shopify/polaris";
 import { useCallback, useRef, useState } from "react";
 import CountdownForm from "~/components/CountdownForm";
 import useCountdownForm from "~/components/CountdownForm/useCountdownForm";
-import { CancelMinor, ClipboardMinor } from "@shopify/polaris-icons";
+import { CancelMinor } from "@shopify/polaris-icons";
 import { formatDate } from "~/lib/utils";
 import {
   type ActionFunctionArgs,
@@ -24,10 +24,11 @@ import {
   type LoaderFunctionArgs,
   json,
 } from "@remix-run/node";
-import createCountdownConfig from "~/actions/create-countdown-config";
+import mutateCountdownConfig from "~/actions/mutate-countdown-config";
 import type { CountdownConfig, CountdownConfigWithId } from "~/lib/types";
 import readCountdownConfig from "~/actions/read-countdown-config";
 import createContextByRequest from "~/context.server";
+import deleteCountdownConfig from "~/actions/delete-countdown-config";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { databaseRepository } = await createContextByRequest(request);
@@ -51,30 +52,41 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await createContextByRequest(request);
   const body: CountdownConfig = await request.json();
 
-  const config = await createCountdownConfig(
-    body,
-    databaseRepository,
-    shopifyRepository,
-  );
+  switch (request.method) {
+    case "POST":
+      const config = await mutateCountdownConfig(
+        body,
+        databaseRepository,
+        shopifyRepository,
+      );
 
-  return redirect(`/app/countdown/${config.id}?section=theme`);
+      return redirect(`/app/countdown/${config.id}`);
+    case "DELETE":
+      await deleteCountdownConfig(
+        body as CountdownConfigWithId,
+        databaseRepository,
+        shopifyRepository,
+      );
+      return redirect(`/app/`);
+    default:
+      return redirect("/app/?error=invalid-countdown-form-method");
+  }
 };
 
-export default function AdditionalPage() {
+export default function CountdownFormPage() {
+  const navigate = useNavigate();
+  const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
+  const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const lastToastIdRef = useRef<string | null>(null);
-  const data = useLoaderData<
-    | {
-        mode: "create";
-      }
-    | { mode: "update"; config: CountdownConfigWithId }
-  >();
+  const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [showValidationErrors, setShowValidationErrors] =
     useState<boolean>(false);
 
   const [selected, setSelected] = useState(0);
   const [showTemplates, setShowTemplates] = useState(true);
-  const form = useCountdownForm();
+  const form = useCountdownForm(isUpdatingForm(data) ? data.config : undefined);
 
   const handleTabChange = useCallback(
     (selectedTabIndex: number) => setSelected(selectedTabIndex),
@@ -91,31 +103,130 @@ export default function AdditionalPage() {
       return;
     }
 
-    await fetcher.submit(JSON.stringify(form.values), {
+    const body = form.values;
+    const isUpdating = isUpdatingForm(data);
+
+    if (isUpdating) {
+      body.id = data.config.id;
+    }
+
+    setIsLoading(true);
+    await fetcher.submit(JSON.stringify(body), {
       method: "POST",
       encType: "application/json",
     });
 
-    shopify.toast.show("Countdown created.");
+    if (isUpdating) {
+      setIsLoading(false);
+      shopify.toast.show("Countdown updated.");
+    } else {
+      setIsLoading(false);
+      shopify.toast.show("Countdown created.", {
+        action: "Add to theme",
+        onAction: () => alert("Not implemented yet."),
+      });
+    }
   }
 
-  function handleDiscard() {}
+  async function handleRemove() {
+    if (!isUpdatingForm(data)) {
+      alert("Countdown not created yet.");
+      return;
+    }
+
+    await fetcher.submit(JSON.stringify(data.config), {
+      method: "DELETE",
+      encType: "application/json",
+    });
+  }
+
+  function handleCopyId() {
+    if (isUpdatingForm(data) === false) {
+      alert("Countdown not created yet.");
+      return;
+    }
+
+    if (lastToastIdRef.current !== null) {
+      shopify.toast.hide(lastToastIdRef.current);
+    }
+
+    navigator.clipboard.writeText(data.config.id);
+    lastToastIdRef.current = shopify.toast.show("Copied to clipboard.");
+  }
 
   return (
     <Page
       title="Countdown"
       backAction={{ content: "Back", url: "/app" }}
       primaryAction={
-        <Button variant="primary" onClick={handleSave}>
-          Create
+        <Button
+          variant="primary"
+          loading={isLoading}
+          onClick={handleSave}
+          disabled={
+            !form.checkTouchedStaus() || form.checkValidity().length !== 0
+          }
+        >
+          {isUpdatingForm(data) ? "Save" : "Create"}
         </Button>
       }
-      secondaryActions={
-        <Button key="discard" onClick={handleDiscard}>
-          Discard
-        </Button>
+      actionGroups={
+        isUpdatingForm(data)
+          ? [
+              {
+                title: "Actions",
+                actions: [
+                  { content: "Copy ID", onAction: handleCopyId },
+                  {
+                    content: "Remove",
+                    destructive: true,
+                    onAction: () => setShowRemoveConfirmation(true),
+                  },
+                ],
+              },
+            ]
+          : undefined
       }
     >
+      <ConfirmationModal
+        active={showDiscardConfirmation}
+        onClose={() => setShowDiscardConfirmation(false)}
+        title="Discard changes?"
+        content="If you discard your changes, you won’t be able to recover them."
+        cancelAction={{
+          text: "Continue editing",
+          onAction: () => setShowDiscardConfirmation(false),
+        }}
+        confirmationAction={{
+          text: "Discard changes",
+          onAction: () => {
+            navigate("/app");
+          },
+        }}
+      />
+
+      {isUpdatingForm(data) ? (
+        <ConfirmationModal
+          active={showRemoveConfirmation}
+          onClose={() => setShowRemoveConfirmation(false)}
+          title={`Delete countdown ${data.config.name}?`}
+          content={
+            <>
+              Are you sure you want to delete the countdown{" "}
+              <strong> {data.config.name}</strong>? This can’t be undone.
+            </>
+          }
+          cancelAction={{
+            text: "Cancel",
+            onAction: () => setShowRemoveConfirmation(false),
+          }}
+          confirmationAction={{
+            text: "Delete countdown",
+            onAction: handleRemove,
+          }}
+        />
+      ) : null}
+
       <Layout>
         <Layout.Section>
           <BlockStack gap="300">
@@ -135,53 +246,17 @@ export default function AdditionalPage() {
                 </List>
               </Banner>
             ) : null}
-            {data.mode === "update" ? (
-              <Card>
-                <BlockStack gap="300">
-                  <div
-                    role="button"
-                    aria-label="Countdown ID"
-                    onClick={() => {
-                      if (lastToastIdRef.current !== null) {
-                        shopify.toast.hide(lastToastIdRef.current);
-                      }
-
-                      navigator.clipboard.writeText(data.config.id);
-                      lastToastIdRef.current = shopify.toast.show(
-                        "Copied to clipboard.",
-                      );
-                    }}
-                  >
-                    <TextField
-                      label="Countdown ID"
-                      value={data.config.id}
-                      readOnly
-                      autoComplete="off"
-                      connectedRight={
-                        <Button
-                          size="large"
-                          icon={<Icon source={ClipboardMinor} />}
-                        >
-                          Copy
-                        </Button>
-                      }
-                    />
-                  </div>
-                </BlockStack>
-              </Card>
-            ) : null}
             <Card padding={"0"}>
               <Tabs
                 tabs={[
                   {
                     id: "config",
-                    content: "1. Configure",
-                    accessibilityLabel: "All customers",
-                    panelID: "config",
+                    content: "Configuration",
+                    panelID: "configuration",
                   },
                   {
                     id: "add-to-theme",
-                    content: "2. Add to theme",
+                    content: "Theme",
                     panelID: "add-to-theme",
                     disabled: data.mode === "create",
                   },
@@ -277,4 +352,42 @@ export default function AdditionalPage() {
       </Layout>
     </Page>
   );
+}
+
+interface ConfirmationModal {
+  active: boolean;
+  title: string | React.ReactNode;
+  content: string | React.ReactNode;
+  onClose: () => void;
+  confirmationAction: { text: string; onAction: () => void };
+  cancelAction: { text: string; onAction: () => void };
+}
+
+function ConfirmationModal(props: ConfirmationModal) {
+  return (
+    <Modal
+      open={props.active}
+      onClose={props.onClose}
+      title={props.title}
+      primaryAction={{
+        destructive: true,
+        content: props.confirmationAction.text,
+        onAction: props.confirmationAction.onAction,
+      }}
+      secondaryActions={[
+        {
+          content: props.cancelAction.text,
+          onAction: props.cancelAction.onAction,
+        },
+      ]}
+    >
+      <Modal.Section>{props.content}</Modal.Section>
+    </Modal>
+  );
+}
+
+function isUpdatingForm(
+  data: any,
+): data is { mode: "update"; config: CountdownConfigWithId } {
+  return data.mode === "update";
 }

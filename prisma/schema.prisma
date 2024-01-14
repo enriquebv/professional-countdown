@@ -28,6 +28,8 @@ model CountdownConfig {
   finishAt    DateTime
   scheduledAt DateTime?
   mode        String // "simple" | "advanced"
+  enabled     Boolean  @default(true)
+  removed     Boolean  @default(false)
   days       CountdownConfigDay[]
 }
 

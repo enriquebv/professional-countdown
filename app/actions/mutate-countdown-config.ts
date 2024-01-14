@@ -2,7 +2,7 @@ import type { CountdownConfig, CountdownConfigWithId } from "~/lib/types";
 import type { DatabaseRepository } from "~/repositories/db";
 import type ShopifyRepository from "~/repositories/shopify";
 
-export default async function createCountdownConfig(
+export default async function mutateCountdownConfig(
   config: CountdownConfig,
   databaseRepository: DatabaseRepository,
   shopifyRepository: ShopifyRepository,

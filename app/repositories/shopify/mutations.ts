@@ -52,9 +52,37 @@ export const MUTATION_CREATE_METAOBJECT = `
     }
   }`;
 
+export const MUTATION_UPDATE_METAOBJECT = `
+ mutation metaobjectCreate($id: ID!, $metaobject: MetaobjectUpdateInput!) {
+    metaobjectUpdate(id: $id, metaobject: $metaobject) {
+      metaobject {
+        id
+        handle
+      }
+      userErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+export const MUTATION_DELETE_METAOBJECT = `
+  mutation ($id: ID!){
+    metaobjectDelete(id: $id) {
+      deletedId 
+      userErrors {
+        field
+        code
+        message
+      }
+    }
+  }`;
+
 export const MUTATION_DELETE_METAOBJECT_CONFIG = `
   mutation($id: ID!) {
-    metaobjectDefinitionDelete(id: $id) {
+    metaobjectDelete(id: $id) {
       deletedId
     }
   }`;

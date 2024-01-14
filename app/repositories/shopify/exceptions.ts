@@ -1,4 +1,4 @@
-type ShopifyRepositoryErrorCodes = "user-errors-found";
+type ShopifyRepositoryErrorCodes = "user-errors-found" | "missing-metaobject";
 
 class ShopifyRepositoryError extends Error {
   constructor(
@@ -14,5 +14,11 @@ class ShopifyRepositoryError extends Error {
 export class UserErrorsFoundError extends ShopifyRepositoryError {
   constructor(query: string, variables: any, response: any) {
     super("user-errors-found", query, variables, response);
+  }
+}
+
+export class MissingMetaobjectError extends ShopifyRepositoryError {
+  constructor(query: string, variables: any, response: any) {
+    super("missing-metaobject", query, variables, response);
   }
 }

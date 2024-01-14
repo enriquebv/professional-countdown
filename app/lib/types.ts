@@ -8,6 +8,7 @@ type WithId<T> = T & { id: string };
 
 export interface CountdownConfig {
   id?: string;
+  enabled: boolean;
   name: string;
   finishAt: Date;
   scheduledAt?: Date;

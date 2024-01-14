@@ -91,15 +91,6 @@ export default function Index() {
                   onSelectionChange={setSelectedCountdowns}
                   resourceName={{ singular: "countdown", plural: "countdowns" }}
                   items={data.countdowns}
-                  promotedBulkActions={[
-                    {
-                      content:
-                        selectedCountdowns?.length === 1
-                          ? "Remove selected coundown"
-                          : "Remove selected countdowns",
-                      onAction: () => console.log("Todo: implement bulk edit"),
-                    },
-                  ]}
                   renderItem={(item) => {
                     const { id, name } = item;
 

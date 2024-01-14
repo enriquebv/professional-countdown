@@ -6,50 +6,11 @@ export type ValidationError = "missing-name" | "finish-is-sooner-than-start";
 /**
  * Hook to easily manage the countdown form state.
  */
-export default function useCountdownForm() {
+export default function useCountdownForm(defaultValues?: CountdownConfig) {
   const valuesSnapshotRef = useRef<string>();
-  const [values, setValues] = useState<CountdownConfig>({
-    name: "",
-    finishAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-    mode: "simple",
-    days: {
-      monday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-      tuesday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-      wednesday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-      thursday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-      friday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-      saturday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-      sunday: {
-        enabled: true,
-        allDay: true,
-        hoursRange: { start: "00:00", end: "24:00" },
-      },
-    },
-  });
+  const [values, setValues] = useState<CountdownConfig>(
+    getInitialValues(defaultValues),
+  );
 
   const storeValuesSnapshot = useCallback(() => {
     valuesSnapshotRef.current = JSON.stringify(values);
@@ -193,5 +154,55 @@ export default function useCountdownForm() {
     setActiveDayEnabledStatus: handleActiveDaysChange,
     setActiveDayRange: handleActiveDaysRangeChange,
     setActiveDayAllDayStatus: handleActiveDaysAllDayChange,
+  };
+}
+
+/**
+ * Function to get the initial values for the form.
+ */
+function getInitialValues(defaultValues?: CountdownConfig): CountdownConfig {
+  return {
+    name: defaultValues?.name ?? "",
+    finishAt:
+      (defaultValues?.finishAt && new Date(defaultValues.finishAt)) ??
+      new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    mode: defaultValues?.mode ?? "simple",
+    days: defaultValues?.days ?? {
+      monday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+      tuesday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+      wednesday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+      thursday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+      friday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+      saturday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+      sunday: {
+        enabled: true,
+        allDay: true,
+        hoursRange: { start: "00:00", end: "24:00" },
+      },
+    },
   };
 }
